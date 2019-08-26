@@ -2,6 +2,7 @@ import requests
 import os
 from bs4 import BeautifulSoup
 import re
+from time import sleep
 
 url = r'https://www.geeksforgeeks.org/computer-network-tutorials/?fbclid=\
         IwAR3HIUxFznzdogs0nlbsy72ctJQG8JRdDVYXpfs2h1805bf75bnfHpP7mmE#dll'
@@ -16,6 +17,7 @@ headers = []  # Basic DataLink da ash.
 class_titles = []  # Href for Parsing Each Section
 chapter_titles = [] # Title for each chapter
 all_urls = []
+zt = ''
 
 def headers_classtitles(style_list):
     for styleclass in style_list:
@@ -29,7 +31,7 @@ def headers_classtitles(style_list):
                         
     
 
-headers_classtitles(style_titles)
+
 
 def get_urls_and_titles(classname):
     for name in classname:
@@ -40,5 +42,30 @@ def get_urls_and_titles(classname):
                         all_urls.append(str(a['href']))
                         chapter_titles.append((a.get_text() + '.html'))
                         break
-get_urls_and_titles(class_titles)
 
+def parse_html():
+    html_content = ''
+    for link, name in zip(all_urls, chapter_titles):
+        try:
+            new_requets = requests.get(link)
+            new_soup = BeautifulSoup(new_requets.text, 'html.parser')
+            for i in new_soup.find_all('article'):
+                html_content += str(i)
+                print(name, 'is Downloaded')
+        except Exception as e:
+            print(e)
+            continue
+    with open('NetworkBook.html', 'w') as e:
+        e.write(html_content)
+        e.close()                
+
+def call_functions():
+    headers_classtitles(style_titles)
+    get_urls_and_titles(class_titles)
+
+def check_req():
+    for i in all_urls:
+        print(i)
+    print('Check FInished Succesfully')
+call_functions()
+parse_html()
