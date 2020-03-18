@@ -7,11 +7,12 @@ import re
 from time import sleep
 import json
 import glob2
-
+import natsort
 from time import sleep
 import time
 import concurrent.futures
 import threading
+from weasyprint import HTML  # TODO dzaan nelia es moduli :(
 
 start_time = time.time()
 try:
@@ -21,19 +22,19 @@ except:
 rel = "stylesheet"
 tagname = "style"
 __style = r"""
-
       body {
         margin: 30 !important;
       }
-
       h1 {
         text-align: center;
         font-size: xx-large !important;
         color: red;
       }
     
-
 """
+
+important_html = 'data.html'
+output_pdf_name = 'Neworking.pdf'
 
 
 class bcolors:
@@ -106,7 +107,7 @@ def get_Links(titles, soup):
         pirveli da meore tl tagidan da tavebis tanmimdevroba ar dairgves.
     """
     print("Gethering All urls")
-    sleep(0.2)
+    
     ctr = 0  # for indexing purposes
     all_links = []
     for title in titles:
@@ -152,12 +153,45 @@ def downloadPages(url_list):
             style = make_style_tag(bsObj=soup, tagname=tagname, style=__style)
             page_head.append(style)
 
-            write_html(filename=f"part {counter}",
+            write_html(filename=f"{counter}",
                        head=page_head, title=page_title, body=page_body)
             counter += 1
         except:
             continue
     print("Done")
+
+
+def sort_html_files_and_merge(glob_sorted):
+    """[Asortirebs Ukve gadmoweril HTML Filebs sataurebis mixedvit
+    rata tavebs mimdevroba ar arios, da Aertianebs Ert surl Html Failad]
+
+    Arguments:
+        glob_sorted {[list]} -- [glob modulis mier ukve direktoriashi shegrovebuli html filebis listi]
+    """
+    sorted_html = natsort.natsorted(glob_sorted)
+    for fs in sorted_html:
+        f = open(fs, 'r').read()
+        soup = BeautifulSoup(f, 'lxml')
+        with open('data.html', 'a') as e:
+            print("Iwereba {}".format(fs))
+            e.write(str(soup))
+
+
+def clear_directory():
+    """
+    asuftavebs directorias HTML Fielebisgan romelic ukve agar aris sachiro
+    radgan is akindzulia ert mtlian HTML Failad
+    """
+    _listdir = os.listdir()
+    for each in _listdir:
+        if each.endswith(".html") and each != important_html:
+            os.remove(each)
+
+
+def merge_as_pdf():  # TODO shesacvelia PDFshi gadamyvani moduli dzaan nela mushaobs
+    print('------------------------------------------------')
+    print("Please Wait Converting HTML TO PDF IT may Take some time")
+    HTML(important_html).write_pdf(output_pdf_name)
 
 
 def main():
@@ -170,7 +204,14 @@ def main():
 
     main_thread = threading.Thread(target=downloadPages, args=[x])
     main_thread.start()
+    main_thread.join()
+    sort_html_files_and_merge(glob2.glob("*.html"))
+    clear_directory()
+    merge_as_pdf()
     print(f"{bcolors.OKGREEN}Download Finished Succesfully!")
 
 
 main()
+
+print("--- %s seconds ---" % (time.time() - start_time))
+# First Test
